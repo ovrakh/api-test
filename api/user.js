@@ -8,19 +8,28 @@ const router = express();
 const config = require('../config');
 
 
-router.post('/user', function (req, res, next){
+router.post('/user', (req, res, next) => {
   let user = new User;
   user.username = req.body.username;
   user.password = req.body.password;
-  user.save(function (err) {
-        if (err) { res.send('Incorrect password')}
-        else {
-          res.send('Created')
-        }
-  })
+  User.findOne({username: user.username}, (err, userCurrent) => {
+    if (err) {
+      return res.send('Incorrect username')
+    }
+    else {
+      if (userCurrent) {
+        res.send('User already exists');
+      } else {
+        user.save((err) => {
+          if (err) res.send('Bad request');
+          res.send('Created');
+        })
+      }
+    }
+  });
 });
 
-router.get('/user', function (req, res, next) {
+router.get('/user', (req, res, next) => {
   if(!req.headers['x-api-key']) {
     return res.send('Unauthorized')
   }
@@ -31,7 +40,7 @@ router.get('/user', function (req, res, next) {
   } catch (err) {
     return res.send('Unauthorized')
   }
-  User.findOne({username: auth.username}, function(err, user) {
+  User.findOne({username: auth.username}, (err, user) => {
     if (err) {return res.send('Incorrect username')}
     else {
       res.json(user)
