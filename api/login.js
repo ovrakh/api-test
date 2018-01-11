@@ -15,7 +15,7 @@ router.post ('/login', (req, res, next) => {
         if (err) {
           return res.send('Incorrect username')
         }
-        if (!user) {return res.sendStatus(401)} else {
+        if (!user) {return res.send('Not found user')} else {
           if (password === user.password) {
             let token = jwt.encode({username: username}, config.secretkey);
             res.send(token);

@@ -9,31 +9,40 @@ const config = require('../config');
 router.use(fileUpload());
 
 router.post('/gridFs', (req, res) => {
-  
+  if (!req.files) return res.send('No files were uploaded.');
+
+  if (!req.headers['x-api-key']) return res.send('Token is empty.');
   let sampleFile = req.files.sampleFile;
 
   let user = new User;
-  let _username = req.headers.username;
+  try {
+  let _username = jwt.decode(req.headers['x-api-key'], config.secretkey).username;
   User.findOne({username: _username}, (err, user) => {
+    if (err) {
+      return res.send('Server Error')
+    }
+    if (!user) {
+      return res.send('Unauthorized');
+    }
     let id = user['_id'];
     let path = '/home/wilix/Desktop/test/img/' + id + '.jpg';
-    
     sampleFile.mv(path, (err) => {
-      if (err)
-        return res.status(500).send(err);
+      if (err) return res.send(err);
 
       res.send('File uploaded!');
     });
     im.resize({
       srcPath: './img/' + id + '.jpg',
       dstPath: './img/' + id + '.jpg',
-      width: 128,
-      progressive: true
+      width: 128
     }, (err, stdout, stderr) => {
       if (err) throw err;
-      console.log('resized kittens.jpg to fit within 256x256px');
+      console.log('resized');
     });
   });
+  } catch(err) {
+    return res.send('Token not found')
+  }
 });
 
 router.get('/gridFs', (req, res, next) => {
