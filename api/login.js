@@ -3,28 +3,26 @@ const jwt = require('jwt-simple');
 const config = require('../config');
 const User = require('./models/user');
 
-router.post ('/login', (req, res, next) => {
-  console.log(config);
+router.post ('/login', (req, res) => {
   if (!req.body.username || !req.body.password) {
     return res.send('Bad request')
-  } else {
-    let username = req.body.username;
-    let password = req.body.password;
-    User.findOne({username: username})
-      .exec((err, user) => {
-        if (err) {
-          return res.send('Incorrect username')
-        }
-        if (!user) {return res.send('Not found user')} else {
-          if (password === user.password) {
-            let token = jwt.encode({username: username}, config.secretkey);
-            res.send(token);
-          } else {
-            return res.send('Not found token')
-          }
-        }
-      })
   }
+
+  User.findOne({ username: req.body.username })
+    .then(user => {
+      if (!user) {
+        return Promise.reject('Not found user')
+      }
+
+      if (req.body.password !== user.password) {
+        return Promise.reject('Not found token')
+      }
+
+      let username = req.body.username;
+      return jwt.encode({ username }, config.secretkey);
+    })
+    .then(data => res.send({ success: true, data }))
+    .catch(err => res.send({ success: false, err }))
 });
 
 module.exports = router;

@@ -9,43 +9,40 @@ const config = require('../config');
 
 
 router.post('/user', (req, res, next) => {
-  let user = new User;
-  user.username = req.body.username;
-  user.password = req.body.password;
-  User.findOne({username: user.username}, (err, userCurrent) => {
-    if (err) {
-      return res.send('Incorrect username')
-    }
-    else {
+  User.findOne({ username: req.body.username })
+    .then((userCurrent) => {
       if (userCurrent) {
-        res.send('User already exists');
-      } else {
-        user.save((err) => {
-          if (err) res.send('Bad request');
-          res.send('Created');
-        })
+        return Promise.reject('User already exists');
       }
-    }
-  });
+
+      let user = new User({
+        username : req.body.username,
+        password : req.body.password
+      });
+
+      return user.save();
+    })
+    .then(data => res.send({ success: true, data }))
+    .catch(err => res.send({ success: false, err }))
 });
 
 router.get('/user', (req, res, next) => {
-  if(!req.headers['x-api-key']) {
-    return res.send('Unauthorized')
+  if (!req.headers['x-api-key']) {
+    return res.send('Not found token')
   }
-  try {
-    console.log('req ', req.headers['x-api-key']);
-    let auth = jwt.decode(req.headers['x-api-key'], config.secretkey);
-    console.log('auth ', auth)
-  } catch (err) {
-    return res.send('Unauthorized')
-  }
-  User.findOne({username: auth.username}, (err, user) => {
-    if (err) {return res.send('Incorrect username')}
-    else {
-      res.json(user)
-    }
-  })
+  
+  let username = jwt.decode(req.headers['x-api-key'], config.secretkey).username;
+
+  User.findOne({ username })
+    .then((user) => {
+      if (!user) {
+        return Promise.reject('Incorrect username');
+      }
+
+      return user;
+    })
+    .then(data => res.send({ success: true, data }))
+    .catch(err => res.send({ success: false, err }))
 });
 
 module.exports = router;

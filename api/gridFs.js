@@ -1,4 +1,3 @@
-const fs = require('fs');
 const router = require('express').Router();
 const User = require('./models/user');
 const im = require('imagemagick');
@@ -13,8 +12,7 @@ router.post('/gridFs', (req, res) => {
 
   if (!req.headers['x-api-key']) return res.send('Token is empty.');
   let sampleFile = req.files.sampleFile;
-
-  let user = new User;
+  
   try {
   let _username = jwt.decode(req.headers['x-api-key'], config.secretkey).username;
   User.findOne({username: _username}, (err, user) => {
