@@ -8,58 +8,51 @@ const config = require('../config');
 router.use(fileUpload());
 
 router.post('/gridFs', (req, res) => {
-  if (!req.files) return res.send('No files were uploaded.');
+    if (!req.files) return res.send('No files were uploaded.');
 
-  if (!req.headers['x-api-key']) return res.send('Token is empty.');
-  let sampleFile = req.files.sampleFile;
-  
-  try {
-  let _username = jwt.decode(req.headers['x-api-key'], config.secretkey).username;
-  User.findOne({username: _username}, (err, user) => {
-    if (err) {
-      return res.send('Server Error')
-    }
-    if (!user) {
-      return res.send('Unauthorized');
-    }
-    let id = user['_id'];
-    let path = '/home/wilix/Desktop/test/img/' + id + '.jpg';
-    sampleFile.mv(path, (err) => {
-      if (err) return res.send(err);
+    if (!req.headers['x-api-key']) return res.send('Token is empty.');
 
-      res.send('File uploaded!');
-    });
-    im.resize({
-      srcPath: './img/' + id + '.jpg',
-      dstPath: './img/' + id + '.jpg',
-      width: 128
-    }, (err, stdout, stderr) => {
-      if (err) throw err;
-      console.log('resized');
-    });
-  });
-  } catch(err) {
-    return res.send('Token not found')
-  }
+    let sampleFile = req.files.sampleFile;
+    let username = jwt.decode(req.headers['x-api-key'], config.secretkey).username;
+
+    User.findOne({ username })
+        .then(user => {
+            if (!user) {
+                return Promise.reject('Unauthorized');
+            }
+            let path = `./images/${user['_id']}.jpg`;
+            sampleFile.mv(path)
+                .then(() => {
+                    return ('File uploaded!');
+                });
+            im.resize({
+                srcPath: `./images/${user['_id']}.jpg`,
+                dstPath: `./images/${user['_id']}.jpg`,
+                width: 128
+            })
+                .then(() => {
+                    console.log('Resized');
+                })
+                .then(data => res.send({ success: true, data }))
+                .catch(err => res.send({ success: false, err }))
+        });
 });
 
 router.get('/gridFs', (req, res, next) => {
-  if(!req.headers['x-api-key']) {
+    if(!req.headers['x-api-key']) {
     return res.send('Unauthorized')
-  }
-  try {
-    console.log('req ', req.headers['x-api-key']);
-    let auth = jwt.decode(req.headers['x-api-key'], config.secretkey);
-    console.log('auth ', auth);
-  User.findOne({username: auth.username}, (err, user) => {
-    if (err) {return res.send('Incorrect username')}
-    else {
-      res.download('./img/' + user['_id'] + '.jpg');
     }
-  })
-  } catch (err) {
-    return res.send('Unauthorized')
-  }
+    let username = jwt.decode(req.headers['x-api-key'], config.secretkey).username;
+    User.findOne({ username })
+        .then(user => {
+          if (!user) {
+              return Promise.reject('Not found user');
+          }
+
+          res.download('./img/' + user['_id'] + '.jpg');
+        })
+        .then(data => res.send({ success: true, data }))
+        .catch(err => res.send({ success: false, err }))
 });
 
 module.exports = router;
