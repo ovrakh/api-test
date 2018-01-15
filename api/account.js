@@ -3,7 +3,7 @@ const jwt = require('jwt-simple');
 const config = require('../config');
 const User = require('./models/user');
 
-router.get('/account', (req, res, next) => {
+router.get('/account', (req, res) => {
   if (!req.headers['x-api-key']) { return res.send('Unauthorized')}
   
     let _username = jwt.decode(req.headers['x-api-key'], config.secretkey).username;

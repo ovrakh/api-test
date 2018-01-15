@@ -2,6 +2,7 @@ const router = require('express').Router();
 const jwt = require('jwt-simple');
 const config = require('../config');
 const User = require('./models/user');
+const bcrypt = require('bcrypt');
 
 router.post ('/login', (req, res) => {
     let p = Promise.resolve({then : function(onFulfill, onReject) {
@@ -17,7 +18,10 @@ router.post ('/login', (req, res) => {
                 return Promise.reject('Not found user')
             }
 
-            if (req.body.password !== user.password) {
+            console.log(user.password);
+            console.log(bcrypt.compareSync(req.body.password, user.password));
+
+            if (!bcrypt.compareSync(req.body.password, user.password)) {
                 return Promise.reject('Not found token')
             }
 
